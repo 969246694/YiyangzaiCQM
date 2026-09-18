@@ -7,8 +7,13 @@
 同时结合静态代码分析（圈复杂度、方法规模、异常处理与资源管理规范性），
 按可配置规则检测违规并计算项目质量得分。
 
+- 源码仓库：<https://github.com/969246694/YiyangzaiCQM>
 - 项目主页：<https://yiyangzai.cn/cqm/>
 - 在线演示：<https://yiyangzai.cn/cqm/>（实时数据，非截图）
+
+> 这是 **v1.0.0 发行包**，内含预编译产物，解压即可用。
+> 想自行编译或参与开发，请从源码仓库获取：仓库中的 `build.sh` 仅依赖 JDK 自带的
+> `javac` 与 `jar`，无需 Maven / Gradle。
 
 ---
 
