@@ -1,0 +1,36 @@
+# ── 构建产物 ──
+out/
+classes/
+target/
+*.class
+
+# ── 打包产物（由 build.sh 生成，不入版本库）──
+dist/
+out/
+*.jar
+# 但依赖 JAR 必须提交：本项目不使用 Maven/Gradle，构建时直接从 lib/ 取依赖
+!lib/*.jar
+
+# ── 运行期数据（H2 数据库、报告、日志）──
+data/
+reports/
+*.mv.db
+*.trace.db
+*.lock.db
+*.log
+
+# ── 密钥（严禁提交）──
+deploy_token.txt
+*.token
+.env
+
+# ── Python ──
+__pycache__/
+*.pyc
+
+# ── 编辑器 / 系统 ──
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

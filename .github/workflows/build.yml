@@ -1,0 +1,70 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 构建
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: 校验构建产物
+        run: |
+          test -f agent/cqm-agent.jar || { echo "缺少探针主 JAR"; exit 1; }
+          test -f agent/cqm-agent-bootstrap.jar || { echo "缺少引导辅助 JAR"; exit 1; }
+          test -d out/server || { echo "缺少服务端 class"; exit 1; }
+          echo "构建产物齐全"
+          ls -lh agent/*.jar
+
+      - name: 校验探针主 JAR 中不含聚合器
+        run: |
+          # 聚合器必须只存在于引导辅助 JAR，否则会出现多份静态状态
+          if unzip -l agent/cqm-agent.jar | grep -q MetricsAggregator; then
+            echo "!! 探针主 JAR 中不应包含 MetricsAggregator"
+            exit 1
+          fi
+          if ! unzip -l agent/cqm-agent-bootstrap.jar | grep -q MetricsAggregator; then
+            echo "!! 引导辅助 JAR 中缺少 MetricsAggregator"
+            exit 1
+          fi
+          echo "类加载器划分正确"
+
+      - name: 校验探针 JAR 自包含 Byte Buddy
+        run: |
+          # 探针随 JVM 启动即用，无法依赖外部类路径；漏打包会导致
+          # java.lang.NoClassDefFoundError: net/bytebuddy/matcher/ElementMatcher
+          if ! unzip -l agent/cqm-agent.jar | grep -q 'net/bytebuddy/matcher/ElementMatcher.class'; then
+            echo "!! 探针 JAR 缺少 Byte Buddy，无法加载"
+            exit 1
+          fi
+          if ! unzip -l agent/cqm-agent.jar | grep -q 'net/bytebuddy/agent/ByteBuddyAgent.class'; then
+            echo "!! 探针 JAR 缺少 byte-buddy-agent"
+            exit 1
+          fi
+          echo "Byte Buddy 已打入探针 JAR"
+
+      - name: 端到端冒烟测试
+        run: |
+          chmod +x ci-smoke.sh
+          ./ci-smoke.sh
+
+      - name: 静态分析器回归测试
+        run: |
+          python3 test_analyzer.py
